@@ -190,11 +190,6 @@ cd <your-repo>
 npm install
 npm run dev
 ```
-
-Open **http://localhost:5500**
-
----
-
 ## 👩‍💻 Author
 
 **Kinjal Pramanik**

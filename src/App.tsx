@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import { ELEMENTS, ElementData, ElementCategory } from './data/elements';
 import { THEME_PRESETS, applyThemeToDocument } from './data/themes';
 import { LayoutMode, PhaseFilter, AmbientLightingTheme } from './types';
@@ -917,6 +918,9 @@ export default function App() {
           <div className="chromatic-aberration-layer" aria-hidden="true" />
         </>
       )}
+
+      {/* Vercel Web Analytics */}
+      <Analytics />
     </div>
   );
 }

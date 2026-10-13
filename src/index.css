@@ -135,9 +135,15 @@
   inset: 0;
   transform-style: preserve-3d;
   will-change: transform;
+  /* ROOT-CAUSE FIX: these wrapper layers are flat planes inside the same 3D rendering context
+     as the cards. Cards that sit behind the plane (negative Z) lose hit-testing to it, so
+     clicks never reached them. Wrappers must be transparent to hit-testing; only the cards
+     opt back in. Drags on empty space still reach the viewport container. */
+  pointer-events: none;
 }
 
 .scene-world {
+  pointer-events: none;
   transform-style: preserve-3d;
   position: absolute;
   top: 50%;
@@ -162,6 +168,7 @@
               box-shadow 0.25s ease-out,
               outline 0.25s ease-out;
   cursor: pointer;
+  pointer-events: auto;
 }
 
 /* Modern Card Surface with Subtle Specular Highlight & Category Color Integration */

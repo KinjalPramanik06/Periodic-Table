@@ -36,10 +36,6 @@ const MODE_CAMERA: Record<LayoutMode, { rx: number; zoom: number }> = {
 
 /** Movement (px) before a press counts as a drag instead of a tap. */
 const DRAG_THRESHOLD = 8;
-/** Touch: cards narrower than this (px on screen) zoom in on first tap instead of opening. */
-const TAP_ZOOM_BELOW_PX = 34;
-/** ...and zoom until the tapped card is about this wide. */
-const TAP_ZOOM_TARGET_PX = 64;
 /** Base perspective distance (px) of the original design; scaled together with the scene. */
 const BASE_PERSPECTIVE = 1100;
 
@@ -437,9 +433,12 @@ export default function App() {
     // Only drag on left mouse button or touch/pen
     if (e.button !== 0 && e.pointerType === 'mouse') return;
 
-    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+    // NOTE: do NOT capture the pointer here. Capturing on pointerdown retargets the
+    // browser's synthesized `click` to the capturing element, so tiles never receive
+    // their onClick (hover still works). Capture is taken lazily once a real drag starts.
 
     if (e.pointerType === 'mouse' && e.shiftKey) {
+      containerRef.current?.setPointerCapture?.(e.pointerId);
       panDragRef.current = { x: e.clientX, y: e.clientY, view };
       return;
     }
@@ -500,6 +499,12 @@ export default function App() {
     if (!movedRef.current) {
       if (Math.hypot(totalDx, totalDy) < DRAG_THRESHOLD) return;
       movedRef.current = true;
+      // Now it's a genuine drag (not a tap): keep receiving moves even outside the viewport
+      try {
+        containerRef.current?.setPointerCapture?.(e.pointerId);
+      } catch {
+        // Ignore
+      }
     }
 
     const now = performance.now();
@@ -549,7 +554,7 @@ export default function App() {
     if (!isDraggingRef.current) return;
     isDraggingRef.current = false;
     try {
-      (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
+      containerRef.current?.releasePointerCapture?.(e.pointerId);
     } catch {
       // Ignore
     }
@@ -788,29 +793,11 @@ export default function App() {
                 isRecentlyDiscovered={isRecentlyDiscovered}
                 timelineYear={timelineYear < 2026 ? timelineYear : null}
                 categories={activeCategories}
-                onClick={(el, rect) => {
+                onClick={(el) => {
                   // A drag / pinch that happens to end over a card must not open it
                   if (movedRef.current) return;
 
-                  // Touch + tiny cards (whole table fitted on a phone): the first tap zooms in on the
-                  // tapped element so the next tap is easy to land; it only opens once it's finger-sized.
-                  if (
-                    viewport.isTouch &&
-                    rect &&
-                    rect.width > 0 &&
-                    rect.width < TAP_ZOOM_BELOW_PX &&
-                    view.scale < MAX_USER_SCALE - 0.01
-                  ) {
-                    const c = toCenterSpace(rect.left + rect.width / 2, rect.top + rect.height / 2);
-                    const target = clamp((view.scale * TAP_ZOOM_TARGET_PX) / rect.width, MIN_USER_SCALE, MAX_USER_SCALE);
-                    setView((v) => {
-                      const z = zoomAbout(v, target, c.x, c.y, boundsRef.current);
-                      // the tapped point stays put while zooming; then slide it to the middle of the screen
-                      return clampView({ ...z, panX: z.panX - c.x, panY: z.panY - c.y }, boundsRef.current);
-                    });
-                    return;
-                  }
-
+                  // One tap / click always opens the details (no intermediate zoom step)
                   soundEngine.playSelect(el.number);
                   setSelectedElement(el);
                 }}

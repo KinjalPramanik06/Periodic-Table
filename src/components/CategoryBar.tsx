@@ -5,11 +5,7 @@ interface CategoryBarProps {
   selectedCategory: ElementCategory | null;
   onSelectCategory: (category: ElementCategory | null) => void;
   categories?: Record<ElementCategory, CategoryInfo>;
-  /**
-   * bar    - centered floating pill bar (desktop)
-   * scroll - full-width, horizontally scrollable, touch-sized pills (phone / tablet)
-   * wrap   - wrapping grid for use inside the mobile drawer
-   */
+
   variant?: 'bar' | 'scroll' | 'wrap';
 }
 
@@ -37,8 +33,8 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
   onSelectCategory,
   categories = CATEGORIES,
   variant = 'bar',
-}) => {
-  // Count elements per category
+}) => 
+  {
   const counts = React.useMemo(() => {
     const map: Record<string, number> = {};
     for (const el of ELEMENTS) {
@@ -48,8 +44,7 @@ export const CategoryBar: React.FC<CategoryBarProps> = ({
   }, []);
 
   const isTouchSized = variant !== 'bar';
-  // NOTE: scrollable rows use justify-start. justify-center on an overflowing flex container
-  // makes the first items unreachable (they overflow to the left of the scroll origin).
+    
   const containerClass =
     variant === 'wrap'
       ? 'touch-ui flex flex-wrap gap-1.5 select-none'

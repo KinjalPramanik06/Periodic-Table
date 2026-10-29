@@ -52,16 +52,15 @@ export const ElementModal: React.FC<ElementModalProps> = ({
   onPrevTourItem,
   onExitTour,
 }) => {
-  // Compare Mode State
   const [isComparing, setIsComparing] = useState<boolean>(false);
   const [compareElement, setCompareElement] = useState<ElementData | null>(null);
   const [selectorTarget, setSelectorTarget] = useState<'primary' | 'secondary' | null>(null);
   const [selectorSearch, setSelectorSearch] = useState<string>('');
 
-  // When element changes, ensure compareElement exists if in compare mode
-  useEffect(() => {
-    if (element && !compareElement) {
-      // Default secondary element to adjacent element in table
+  useEffect(() => 
+    {
+    if (element && !compareElement) 
+    {
       const defaultSecondary =
         element.number < ELEMENTS.length
           ? ELEMENTS[element.number]
@@ -70,7 +69,6 @@ export const ElementModal: React.FC<ElementModalProps> = ({
     }
   }, [element, compareElement]);
 
-  // Handle keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!element) return;
@@ -118,7 +116,7 @@ export const ElementModal: React.FC<ElementModalProps> = ({
     selectorTarget,
   ]);
 
-  // Search filtered elements for the compare picker
+  // Search filtered elements for the compare 
   const filteredElementsForPicker = useMemo(() => {
     if (!selectorSearch.trim()) return ELEMENTS;
     const q = selectorSearch.toLowerCase().trim();
@@ -181,7 +179,7 @@ export const ElementModal: React.FC<ElementModalProps> = ({
     setIsComparing((prev) => !prev);
   };
 
-  // Reusable header controls (rendered in the mobile toolbar row and the desktop header row)
+  // Reusable header controls for mobile and desktops
   const categoryPill = (
     <span
       className="text-[11px] sm:text-xs px-2.5 py-0.5 rounded-full font-medium whitespace-nowrap truncate max-w-full"
@@ -231,7 +229,6 @@ export const ElementModal: React.FC<ElementModalProps> = ({
     </div>
   );
 
-  // Bohr model sizing: the 176px orbit canvas is scaled down on phones
   const bohrModel = (
     <div className="relative w-33 h-33 sm:w-44 sm:h-44 shrink-0">
       <div className="absolute left-1/2 top-1/2 w-44 h-44 -translate-x-1/2 -translate-y-1/2 scale-75 sm:scale-100 flex items-center justify-center">
@@ -299,7 +296,7 @@ export const ElementModal: React.FC<ElementModalProps> = ({
     </div>
   );
 
-  // Compact hero card used for the two pinned elements in compare mode
+  // Compare mode
   const compareHero = (
     el: ElementData,
     cat: CategoryInfo,
@@ -348,8 +345,7 @@ export const ElementModal: React.FC<ElementModalProps> = ({
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md animate-fadeIn"
       style={{
-        // Gap on all four sides: ~3.5vw on phones, growing on tablet/desktop (12px → 48px),
-        // and never smaller than the device's safe-area (notch / home indicator).
+        // Gap on all four sides
         paddingTop: 'max(clamp(12px, 3.5vw, 48px), env(safe-area-inset-top))',
         paddingBottom: 'max(clamp(12px, 3.5vw, 48px), env(safe-area-inset-bottom))',
         paddingLeft: 'max(clamp(12px, 3.5vw, 48px), env(safe-area-inset-left))',

@@ -13,7 +13,6 @@ interface ElementCardProps {
   isRecentlyDiscovered?: boolean;
   timelineYear?: number | null;
   categories?: Record<ElementCategory, CategoryInfo>;
-  /** `rect` is the card's on-screen box (absent for keyboard activation). */
   onClick: (element: ElementData, rect?: DOMRect) => void;
   onMouseEnter?: (element: ElementData) => void;
 }
@@ -33,7 +32,6 @@ export const ElementCard: React.FC<ElementCardProps> = memo(({
 }) => {
   const catInfo = categories[element.category] || CATEGORIES[element.category];
 
-  // Pass CSS custom variables for category glow and accent color
   const cardStyle: React.CSSProperties & Record<string, string> = {
     transform: getTransformString(transform),
     '--card-color': catInfo.color,

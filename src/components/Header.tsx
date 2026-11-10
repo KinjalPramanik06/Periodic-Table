@@ -54,11 +54,8 @@ interface HeaderProps {
   onToggleTimeline?: () => void;
   timelineYear?: number;
   isTimelineActive?: boolean;
-  /** Which UI regime to render. Phone/tablet use a compact bar + drawer. */
   regime?: LayoutRegime;
-  /** Landscape phone: height is scarce, so the layout switcher stays in the bar. */
   isShort?: boolean;
-  /** Extra content shown inside the drawer (e.g. category filter on landscape phones). */
   drawerExtra?: React.ReactNode;
 }
 
@@ -96,7 +93,6 @@ export const Header: React.FC<HeaderProps> = ({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const themeMenuRef = useRef<HTMLDivElement>(null);
 
-  // Close theme menu on outside click
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (themeMenuRef.current && !themeMenuRef.current.contains(e.target as Node)) {
@@ -111,7 +107,6 @@ export const Header: React.FC<HeaderProps> = ({
 
   const activeTheme = THEME_PRESETS[currentThemeId] || THEME_PRESETS['prism'];
 
-  // Leaving the compact regime (e.g. rotating or resizing to desktop) must not leave a drawer open.
   useEffect(() => {
     if (regime === 'desktop') setIsMenuOpen(false);
   }, [regime]);

@@ -26,10 +26,7 @@ interface TimelineFilterProps {
   totalElements: number;
   recentElements?: ElementData[];
   onSelectElement?: (element: ElementData) => void;
-  /**
-   * Render in the page flow (pushes the 3D view down and shrinks it) instead of floating over it.
-   * Used on phones/tablets so the panel never covers the interactive table.
-   */
+
   inline?: boolean;
 }
 

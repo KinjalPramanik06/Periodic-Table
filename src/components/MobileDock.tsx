@@ -17,10 +17,6 @@ const MODES = [
   { id: 'table', label: 'Table', icon: TableIcon },
 ] as const;
 
-/**
- * Thumb-reach toolbar for phones: layout switcher + zoom/fit.
- * It sits in the page flow (not over the canvas), so the 3D scene is fitted to what is left.
- */
 export const MobileDock: React.FC<MobileDockProps> = ({ currentMode, onSelectMode, onZoomIn, onZoomOut, onFit }) => {
   const tool = 'flex-1 min-w-0 min-h-11 flex items-center justify-center rounded-lg text-slate-200 active:bg-white/15';
   return (

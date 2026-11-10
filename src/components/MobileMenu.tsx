@@ -41,7 +41,7 @@ export interface MobileMenuProps {
   isTimelineOpen: boolean;
   onToggleTimeline?: () => void;
   isTimelineActive: boolean;
-  /** Extra content (e.g. the category filter on landscape phones where there is no room for the bar). */
+
   extra?: React.ReactNode;
 }
 

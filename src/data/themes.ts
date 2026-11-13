@@ -30,10 +30,6 @@ export interface ThemePreset {
   categories: Record<ElementCategory, CategoryInfo>;
 }
 
-// ---------------------------------------------------------------------------
-// Helpers: build a full CategoryInfo from a single hex colour
-// ---------------------------------------------------------------------------
-
 const hexToRgb = (hex: string): [number, number, number] => {
   const h = hex.replace('#', '');
   return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];

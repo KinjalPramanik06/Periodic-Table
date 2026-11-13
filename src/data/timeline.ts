@@ -75,10 +75,6 @@ export const TIMELINE_ERAS: TimelineEra[] = [
   },
 ];
 
-/**
- * Parses any element year (number or string like "Ancient" or "1000 BC")
- * into a comparable integer calendar year.
- */
 export function getElementDiscoveryYear(element: ElementData): number {
   const raw = element.year;
   if (raw === undefined || raw === null) return 2026;

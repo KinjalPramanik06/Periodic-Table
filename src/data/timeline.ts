@@ -82,7 +82,7 @@ export function getElementDiscoveryYear(element: ElementData): number {
 
   const str = String(raw).toLowerCase().trim();
   if (str.includes('ancient') || str.includes('antiquity') || str.includes('prehistoric')) {
-    return 0; // Antiquity
+    return 0; 
   }
   if (str.includes('bc')) {
     const num = parseInt(str.replace(/\D/g, ''), 10);
@@ -92,17 +92,11 @@ export function getElementDiscoveryYear(element: ElementData): number {
   return isNaN(parsed) ? 2026 : parsed;
 }
 
-/**
- * Checks if an element was discovered on or before a given historical year.
- */
 export function isElementDiscoveredByYear(element: ElementData, targetYear: number): boolean {
   const discYear = getElementDiscoveryYear(element);
   return discYear <= targetYear;
 }
 
-/**
- * Formats a discovery year for clean badge display.
- */
 export function formatDiscoveryYear(element: ElementData): string {
   if (typeof element.year === 'string' && (element.year === 'Ancient' || element.year.includes('BC'))) {
     return element.year;

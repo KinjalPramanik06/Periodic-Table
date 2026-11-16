@@ -7,9 +7,7 @@ export interface AccentRamp {
   c300: string;
   c400: string;
   c500: string;
-  /** Secondary accent (replaces `rose-500`, used as the end of accent gradients). */
   second: string;
-  /** "r, g, b" of c400, used by glows written in raw CSS. */
   rgb: string;
 }
 
@@ -19,12 +17,10 @@ export interface ThemePreset {
   description: string;
   accentGradient: string;
   accent: AccentRamp;
-  /** Backdrop: three glow colours ("r, g, b"), a deep base for each lighting mode, and a panel tint. */
   ambient: {
     glow: [string, string, string];
     baseStudio: string;
     baseDeep: string;
-    /** "r, g, b" tint used for glass panels, toolbars and card surfaces. */
     panel: string;
   };
   categories: Record<ElementCategory, CategoryInfo>;
@@ -194,11 +190,6 @@ export const THEME_PRESETS: Record<string, ThemePreset> = {
 // Applying a theme + lighting mode to the document
 // ---------------------------------------------------------------------------
 
-/**
- * Writes the active theme and lighting mode to CSS variables on <html>.
- * Overriding `--color-amber-*` / `--color-rose-500` re-colours every Tailwind
- * `amber-*` / `rose-500` utility, so the whole UI follows the theme accent.
- */
 export function applyThemeToDocument(themeId: string, lighting: AmbientLightingTheme): void {
   const theme = THEME_PRESETS[themeId] ?? THEME_PRESETS.prism;
   const root = document.documentElement;

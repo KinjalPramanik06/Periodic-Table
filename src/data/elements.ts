@@ -12,9 +12,9 @@ export interface ElementData {
   electronConfiguration: string;
   shells: number[];
   electronegativity?: number | null;
-  meltingPoint?: number | null; // Kelvin
-  boilingPoint?: number | null; // Kelvin
-  density?: number | null; // g/cm3
+  meltingPoint?: number | null; 
+  boilingPoint?: number | null; 
+  density?: number | null;
   discoveredBy?: string;
   year?: number | string;
   summary: string;

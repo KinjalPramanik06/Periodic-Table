@@ -1,0 +1,380 @@
+@import "tailwindcss";
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+  body {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: geometricPrecision;
+    overscroll-behavior: none;
+    -webkit-tap-highlight-color: transparent;
+    font-family: 'Inter', 'Geist', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: #04060b;
+    color: #f1f5f9;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+}
+
+:root {
+  --card-shadow: 0 8px 22px rgba(0, 0, 0, 0.5),
+                 0 2px 6px rgba(0, 0, 0, 0.35);
+  --card-shadow-hover: 0 16px 36px rgba(0, 0, 0, 0.7),
+                       0 4px 12px rgba(0, 0, 0, 0.4);
+  --card-ambient-specular: 0.1;
+  --card-glass-bg: linear-gradient(180deg, rgba(30, 38, 56, 0.96) 0%, rgba(15, 20, 32, 0.98) 100%);
+  --panel-rgb: 6, 9, 15;
+  --ambient-bg-base: #04060b;
+  --ambient-bg-gradient: radial-gradient(circle at 50% -10%, rgba(30, 46, 80, 0.42) 0%, transparent 60%),
+    radial-gradient(circle at 12% 40%, rgba(18, 28, 50, 0.4) 0%, transparent 50%),
+    radial-gradient(circle at 88% 60%, rgba(24, 20, 44, 0.34) 0%, transparent 52%),
+    radial-gradient(circle at 50% 110%, rgba(2, 3, 6, 0.95) 0%, transparent 70%);
+}
+
+/* Backdrop canvas */
+.mesh-gradient-bg {
+  background-color: var(--ambient-bg-base);
+  background-image: var(--ambient-bg-gradient);
+  transition: background-color 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Floating control bars (top header + bottom category bar / mobile dock).
+   The bar itself is only a positioning + stacking context. Its look is built from two layers:
+     ::before  a frosted blur that extends past the TOP and BOTTOM edges and feathers out,
+               so the bar melts into the scene instead of ending in a hard line;
+     ::after   the thin tinted surface with a hairline border.
+   Neither layer is a backdrop root for the other, so the blur really samples the scene. */
+.floating-glass-bar {
+  --edge-blur: 18px;
+  --edge-blur-amount: 12px;
+  position: relative;
+  isolation: isolate;
+}
+
+.floating-glass-bar::before {
+  content: '';
+  position: absolute;
+  inset: calc(var(--edge-blur) * -1) -12px;
+  z-index: -1;
+  pointer-events: none;
+  backdrop-filter: blur(var(--edge-blur-amount)) saturate(1.1);
+  -webkit-backdrop-filter: blur(var(--edge-blur-amount)) saturate(1.1);
+  -webkit-mask-image:
+    linear-gradient(to bottom, transparent 0, #000 var(--edge-blur), #000 calc(100% - var(--edge-blur)), transparent 100%),
+    linear-gradient(to right, transparent 0, #000 12px, #000 calc(100% - 12px), transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(to bottom, transparent 0, #000 var(--edge-blur), #000 calc(100% - var(--edge-blur)), transparent 100%),
+    linear-gradient(to right, transparent 0, #000 12px, #000 calc(100% - 12px), transparent 100%);
+  mask-composite: intersect;
+}
+
+.floating-glass-bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    rgba(var(--panel-rgb), 0.58) 0%,
+    rgba(var(--panel-rgb), 0.46) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05),
+              0 12px 28px -16px rgba(0, 0, 0, 0.55);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .floating-glass-bar::before {
+    display: none;
+  }
+  .floating-glass-bar::after {
+    background: rgb(var(--panel-rgb));
+  }
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* 3D Scene Viewport & World Preserving Depth Buffer.
+   The perspective value is set inline from the live fit scale (see App.tsx);
+   1100px is the fallback for the original desktop design. */
+.perspective-container {
+  perspective: 1100px;
+  perspective-origin: 50% 50%;
+  transform-style: preserve-3d;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+/* While the user zooms / the window resizes, cards must follow instantly instead of easing */
+.scene-zooming .element-card-3d {
+  transition: opacity 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
+}
+.scene-zooming .scene-world {
+  transition: none !important;
+}
+
+/* Applies the fit-to-viewport scale + user pan/zoom. Kept separate from .scene-world
+   so resizing never runs through the camera's smoothing transition. */
+.scene-scaler {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  /* No will-change here: it pins the layer's raster scale, so zooming only stretched a low-res
+     bitmap (blurry text). Without it the browser re-rasterises at the live scale and stays sharp. */
+  /* ROOT-CAUSE FIX: these wrapper layers are flat planes inside the same 3D rendering context
+     as the cards. Cards that sit behind the plane (negative Z) lose hit-testing to it, so
+     clicks never reached them. Wrappers must be transparent to hit-testing; only the cards
+     opt back in. Drags on empty space still reach the viewport container. */
+  pointer-events: none;
+}
+
+.scene-world {
+  pointer-events: none;
+  transform-style: preserve-3d;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+}
+
+/* 3D Periodic Card with Modern Tactile Geometry */
+.element-card-3d {
+  position: absolute;
+  width: calc(120px * var(--s, 1));
+  height: calc(154px * var(--s, 1));
+  left: calc(-60px * var(--s, 1));
+  top: calc(-77px * var(--s, 1));
+  transform-style: preserve-3d;
+  backface-visibility: visible !important;
+  -webkit-backface-visibility: visible !important;
+  transition: transform 1.2s cubic-bezier(0.2, 0.8, 0.2, 1),
+              translate 1.2s cubic-bezier(0.2, 0.8, 0.2, 1),
+              opacity 0.7s cubic-bezier(0.2, 0.8, 0.2, 1),
+              box-shadow 0.25s ease-out,
+              outline 0.25s ease-out;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+/* Modern Card Surface with Subtle Specular Highlight & Category Color Integration */
+.card-glass {
+  /* Laid out at the design size, then `zoom`ed to the live scene scale: re-rasterised text, not a stretched bitmap */
+  width: 120px;
+  height: 154px;
+  zoom: var(--s, 1);
+  border-radius: 12px;
+  background: var(--card-glass-bg);
+  border: 1px solid rgba(255, 255, 255, var(--card-ambient-specular));
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 14px 14px 13px 14px;
+  box-shadow: var(--card-shadow),
+              inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transition: box-shadow 0.3s ease-out,
+              border-color 0.25s ease-out,
+              background 0.3s ease-out;
+}
+
+/* Hover State: Anti-Jitter with Category-Matched Halo */
+@media (hover: hover) {
+  .element-card-3d:hover {
+    z-index: 100 !important;
+  }
+}
+
+@media (hover: hover) {
+  .element-card-3d:hover .card-glass {
+    background: linear-gradient(180deg, rgba(40, 50, 72, 0.98) 0%, rgba(20, 27, 42, 0.98) 100%);
+    border-color: var(--card-color, rgba(255, 255, 255, 0.7));
+    box-shadow: 0 0 24px var(--card-glow, rgba(255, 255, 255, 0.3)),
+                var(--card-shadow-hover),
+                inset 0 1px 1px rgba(255, 255, 255, 0.3);
+    outline: 2px solid var(--card-color, #ffffff);
+    outline-offset: -1px;
+  }
+}
+
+/* Active Selected Category Highlight State */
+.element-card-3d.category-active .card-glass {
+  background: linear-gradient(180deg, rgba(30, 38, 56, 0.96) 0%, rgba(15, 20, 32, 0.98) 100%);
+  border-color: var(--card-color, #ffffff);
+  box-shadow: 0 0 20px var(--card-glow, rgba(255, 255, 255, 0.4)),
+              var(--card-shadow),
+              inset 0 0 14px var(--card-glow-subtle, rgba(255, 255, 255, 0.15));
+}
+
+/* Active Selected Element Highlight State */
+.element-card-3d.element-selected .card-glass {
+  border-color: #ffffff;
+  outline: 3px solid var(--card-color, #ffffff);
+  outline-offset: 1px;
+  box-shadow: 0 0 35px var(--card-glow, rgba(255, 255, 255, 0.6)),
+              var(--card-shadow-hover);
+  background: linear-gradient(180deg, rgba(44, 54, 78, 0.98) 0%, rgba(22, 30, 46, 0.98) 100%);
+}
+
+/* Dimmed non-matching cards when filtering */
+.element-card-3d.dimmed {
+  opacity: 0.18 !important;
+  pointer-events: auto;
+}
+
+.element-card-3d.dimmed .card-glass {
+  filter: grayscale(60%);
+}
+
+/* Historical Timeline: Undiscovered elements in past eras */
+.element-card-3d.undiscovered {
+  opacity: 0.15 !important;
+  pointer-events: auto;
+  transition: opacity 0.3s ease, filter 0.3s ease;
+}
+
+.element-card-3d.undiscovered .card-glass {
+  filter: grayscale(100%) contrast(70%) brightness(55%);
+  border-style: dashed !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  background: rgba(10, 16, 30, 0.4) !important;
+  box-shadow: none !important;
+}
+
+@media (hover: hover) {
+  .element-card-3d.undiscovered:hover {
+    opacity: 0.75 !important;
+  }
+}
+
+@media (hover: hover) {
+  .element-card-3d.undiscovered:hover .card-glass {
+    filter: grayscale(30%) contrast(95%) brightness(90%);
+    border-color: rgba(var(--accent-rgb, 251, 191, 36), 0.6) !important;
+  }
+}
+
+/* Historical Timeline: Recently discovered element celebration glow */
+.element-card-3d.recently-discovered .card-glass {
+  box-shadow: 0 0 25px rgba(var(--accent-rgb, 251, 191, 36), 0.75),
+              var(--card-shadow),
+              inset 0 0 15px rgba(var(--accent-rgb, 251, 191, 36), 0.25) !important;
+  border-color: var(--accent-400, #fbbf24) !important;
+  animation: discoveryPulse 2.2s infinite alternate ease-in-out;
+}
+
+@keyframes discoveryPulse {
+  0% {
+    box-shadow: 0 0 16px rgba(var(--accent-rgb, 251, 191, 36), 0.45), inset 0 0 6px rgba(var(--accent-rgb, 251, 191, 36), 0.15);
+  }
+  100% {
+    box-shadow: 0 0 30px rgba(var(--accent-rgb, 251, 191, 36), 0.85), inset 0 0 16px rgba(var(--accent-rgb, 251, 191, 36), 0.35);
+  }
+}
+
+/* Custom scrollbars for modal/details */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.5);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.5);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.8);
+}
+
+/* ------------------------------------------------------------------ */
+/* Responsive & touch                                                  */
+/* ------------------------------------------------------------------ */
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-fadeIn {
+  animation: fadeIn 0.2s ease-out both;
+}
+
+/* Gesture hint on touch devices: visible briefly, then gets out of the way */
+@keyframes hintFade {
+  0%, 70% { opacity: 1; }
+  100% { opacity: 0; visibility: hidden; }
+}
+.hint-fade {
+  animation: hintFade 6s ease-out forwards;
+}
+
+/* Fingers: bigger hit areas */
+@media (pointer: coarse) {
+  /* Fill the gaps between cards so a tap between two never falls through to the background */
+  .element-card-3d::after {
+    content: '';
+    position: absolute;
+    inset: -6px -8px;
+  }
+
+  .touch-ui button,
+  .touch-ui [role='button'],
+  .touch-ui select {
+    min-height: 40px;
+    min-width: 40px;
+  }
+
+  /* iOS Safari zooms the page when focusing inputs below 16px */
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+
+  .touch-ui input[type='range'] {
+    min-height: 28px;
+  }
+}
+
+/* Phones & any touch screen: 118 live backdrop blurs would tank the frame rate */
+@media (max-width: 767px), (pointer: coarse) {
+  .card-glass {
+    background: var(--card-glass-bg);
+  }
+  .element-card-3d {
+    /* Shorter settle time so layout changes feel snappy on slower GPUs */
+    transition: transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1),
+                translate 0.9s cubic-bezier(0.2, 0.8, 0.2, 1),
+                opacity 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .element-card-3d,
+  .scene-world {
+    transition-duration: 0.01ms !important;
+  }
+  .hint-fade,
+  .animate-fadeIn {
+    animation-duration: 0.01ms !important;
+  }
+}

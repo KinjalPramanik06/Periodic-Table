@@ -1,0 +1,6 @@
+{
+  "name": "3D Interactive Periodic Table",
+  "description": "Modern 3D interactive periodic table with glassmorphism styling, parallax grid view, sphere and helix layouts, and comprehensive element data.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -180,7 +180,3 @@ npm run dev
 ## 👩‍💻 Author
 
 **Kinjal Pramanik**
-
-Computer Science & Engineering student building full-stack, backend, and AI-powered applications.
-
-⭐ If you find the project useful, consider starring the repository.
